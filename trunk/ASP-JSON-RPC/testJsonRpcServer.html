@@ -1,0 +1,51 @@
+<html>
+<head>
+	
+	<title>dojox.presentation - Presentation Mechanism</title>
+
+	<script type="text/javascript"> djConfig = { isDebug: true, parseOnLoad: true }; </script>
+	<script type="text/javascript" src="lib/dojo/dojo.js"></script>
+	<script type="text/javascript" src="lib/dijit/form/Button.js"></script>
+	
+		
+	<script type="text/javascript">
+		dojo.require("dojo.rpc.JsonService");
+		dojo.require("medryx.util");
+	</script>
+
+	<style type="text/css">
+		@import "lib/dojo/resources/dojo.css";
+	        @import "lib/dijit/themes/tundra/tundra.css";
+        	@import "lib/dijit/tests/css/dijitTests.css";
+		@import "lib/dojox/presentation/resources/Show.css"; 		
+	</style>
+
+	<script type="text/javascript">
+		
+		var rpcDescription = {
+			serviceType:"JSON-RPC",
+			serviceURL:"mathRpc.asp",
+			methods:[
+			    {name:"add", parameters:[{name:"a"}, {name:"b"} ]}
+			]
+		};
+
+        dojo.addOnLoad(function() {
+			var adder = new dojo.rpc.JsonService(rpcDescription);
+			var deferred = adder.add(3, 5);
+			deferred.addCallback(function(result) {
+				alert("result returned was: " + result);
+			});
+			deferred.addErrback(function(error) {
+				alert(medryx.util.UrlDecode(error));
+			});
+		
+		});
+
+	</script>
+
+</head>
+<body class="tundra">
+	
+</body>
+</html>
