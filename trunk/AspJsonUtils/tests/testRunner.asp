@@ -10,7 +10,7 @@ Option Explicit
 <%
 	Dim oRunner
 	Set oRunner = New UnitRunner
-	oRunner.pathToThis = "/ASP-JSON-RPC/asp-lib/aspunit/"
+	oRunner.pathToThis = "/AspJsonUtils/asp-lib/aspunit/"
 	oRunner.AddTestContainer New StoredProcedureAccessorTest
 	oRunner.AddTestContainer New RsToJsonTest
 	oRunner.Display()

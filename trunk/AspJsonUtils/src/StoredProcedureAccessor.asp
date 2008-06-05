@@ -24,19 +24,53 @@
 		private cmd
 		private rs
 		private connectionString
+		private invalidFields
+		private validators
+		private forceValidation_
+		
+		'if true, are rror will be thrown if invalid, default is true
+		public property let forceValidation(value)
+			forceValidation_ = value
+		end property
 		
 		public sub setConnectionString(str)
 			connectionString = str
 		end sub
 		
 		private sub class_initialize
+			forceValidation_ = true
 			set cmd = server.createObject("ADODB.Command")
+			cmd.commandtimeout = 10
 			set rs = server.createObject("ADODB.Recordset")
+			rs.cursorType = adOpenStatic
+			rs.lockType = adLockReadOnly
+			rs.cursorLocation = adUseClient
+			set validators = server.createObject("Scripting.Dictionary")
 		end sub
 		
 		private sub class_terminate
-			set cmd = nothing
 			set rs = nothing
+			set cmd = nothing
+			set validators = nothing
+		end sub
+		
+		private sub addRegexValidator(fieldName, pattern)
+			dim re
+			set re = new RegexValidator
+			re.setPattern(pattern)
+			
+			validators.add fieldName, ""
+			set validators.item(fieldName) = re
+		end sub
+		
+		public sub addValidator(fieldName, validator)
+		
+			if IsObject(validator) then
+				validators.add fieldName, ""
+				set validators.item(fieldName) = validator
+			else
+				addRegexValidator fieldName, validator
+			end if
 		end sub
 		
 		public sub addInputParameter(name, paramType, length, value)
@@ -99,6 +133,11 @@
 		end function
 	
 		private sub prepare()
+			if forceValidation_ then
+				if not validate() then
+					err.raise 99, "Invalid Field Value -- Validator Failed", invalidFields
+				end if
+			end if
 			cmd.CommandType = adCmdStoredProc
 			if connectionString <> "" then
 				cmd.activeConnection = connectionString
@@ -107,6 +146,36 @@
 			end if
 			cmd.CommandText = storedProcedure
 		end sub
+	
+		public function getInvalidFields()
+			getInvalidFields = invalidFields
+		end function
+	
+		public function validate()
+			invalidFields = ""
+			dim param
+			
+			for each param in cmd.parameters
+				if isobject(validators.item(param.name)) then
+					dim validator
+					set validator = validators.item(param.name)
+					dim value
+					value = param.value
+					if not validator.validate(value) then
+					
+						if invalidFields <> "" then
+							invalidFields = invalidFields & ", "
+						end if
+						invalidFields = invalidFields & param.name & ":" & value
+					end if
+				end if
+			next
+			if invalidFields <> "" then
+				validate = false
+			else 
+				validate = true
+			end if
+		end function
 	
 		'execute an update and return the parameters dicitonary
 		public function executeUpdate()
@@ -129,6 +198,39 @@
 			jsonConverter.setRecordset(rs)
 			executeQueryJson = jsonConverter.convert
 			rs.close()
+		end function
+		
+	end class
+	
+
+	'a validator is any class that has a validate method that
+	'returns true or fals.
+	'this is a simple regex based validator
+	class RegexValidator
+		private re
+		
+		public property let globalMatch(val)
+			re.global = val
+		end property
+		
+		public property let ignoreCase(val)
+			re.ignoreCase = val
+		end property
+		
+		private sub class_initialize
+			set re = new RegExp
+		end sub
+		
+		private sub class_terminate
+			set re = nothing
+		end sub
+		
+		public sub setPattern(str)
+			re.pattern = str
+		end sub
+		
+		public function validate(expression)
+			validate = re.test(expression)
 		end function
 		
 	end class
