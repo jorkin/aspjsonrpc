@@ -47,6 +47,7 @@ class JsonRpcServer
 		set delegateClass = value
 		on error resume next 'if there is no property for server, the delegate class doesn't care about the server! (it can always user Raise to send error back)
 			set value.server = me
+			err.clear
 		on error goto 0
 	end sub
 	
@@ -55,6 +56,7 @@ class JsonRpcServer
 		version = "unknown"
 		on error resume next 'optional for delegateClass to provide this
 			version = delegateClass.version
+			err.clear
 		on error goto 0
 		response.write "/*{ version:""" & version & """, error:{ name:""" & name & """, code:""" & code & """, message:""" & Server.URLEncode(message) & """ }}*/"
 		response.flush
@@ -110,13 +112,14 @@ class JsonRpcServer
 		
 		set getRequest = new RpcRequest
 		
-		'on error resume next
+		on error resume next
 			getRequest.initialize(rawRequest)
 			
 			if err.number <> 0 then
 				writeErrorResponse "Parse error", err.number, "Could not parse request: " & rawRequest & " ASPError: " & err.description
 			end if
-	'	on error goto 0
+			err.clear
+		on error goto 0
 	end function
 
 	public sub writeSuccessfulResponse(result, id, version)
@@ -161,6 +164,7 @@ class JsonRpcServer
 			if err.number <> 0 then
 				useReqId = true
 			end if
+			err.clear
 		on error goto 0
 		
 		dim calledMethod
@@ -182,6 +186,7 @@ class JsonRpcServer
 		if err.number <> 0 then
 			writeErrorResponse "Internal Error", err.number, err.description
 		end if
+		err.clear
 		on error goto 0
 		
 		dim id, version
@@ -190,6 +195,7 @@ class JsonRpcServer
 		on error resume next 'optional for delegateClass to provide these
 			id = delegateClass.id
 			version = delegateClass.version
+			err.clear
 		on error goto 0
 		
 		if useReqId then

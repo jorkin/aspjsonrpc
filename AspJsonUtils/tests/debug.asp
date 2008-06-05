@@ -47,7 +47,22 @@ set rs = nothing
 set spa = new StoredProcedureAccessor
 
 spa.setStoredProcedure("getById")
-spa.addIntegerInput "id", 1
+
+class numvalid 
+	public function validate(exp)
+		if exp = 1 then
+			validate = true
+		else
+			validate = false
+		end if
+	end function
+end class
+spa.addValidator "id", "3"
+
+spa.addIntegerInput "id", 2
+
+spa.validate()
+response.write spa.getInvalidFields
 
 jsonText = spa.executeQueryJson(jsonConverter)
 
